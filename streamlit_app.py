@@ -9,23 +9,18 @@ from PIL import Image
 
 st.set_page_config(page_title="BEAM - Emissions App", layout="wide", page_icon="♻️")
 
-# Header with logo
-st.markdown(
-    "<div style='display: flex; align-items: center; justify-content: space-between;'>"
-    "<img src='https://neotericremodelling.ca/wp-content/uploads/2024/01/cropped-NEOTERIC_Logo_Black-Transparent-300x79.png' width='180'/>"
-    "<h1 style='text-align: right; color: #3f51b5;'>♻️ BEAM - Building Emissions Accounting Model</h1>"
-    "</div><hr>",
-    unsafe_allow_html=True
-)
+def icon(title, svg_url):
+    return f'<img src="{svg_url}" width="18" style="margin-right:8px; vertical-align:middle;"> {title}'
 
-# Emoji-based sidebar navigation
+# Sidebar with SVG Icons
 with st.sidebar:
+    st.markdown("## 🏗️ BEAM")
     page = st.radio("Navigation", [
-        "🏗️ Project Info",
-        "🧱 Components",
-        "📊 Results",
-        "🤖 AI Assistant"
-    ])
+        icon("Project Info", "https://www.svgrepo.com/show/532556/file-text.svg"),
+        icon("Components", "https://www.svgrepo.com/show/532538/layers.svg"),
+        icon("Results", "https://www.svgrepo.com/show/532507/bar-chart-2.svg"),
+        icon("AI Assistant", "https://www.svgrepo.com/show/532635/message-square.svg")
+    ], label_visibility="collapsed")
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"] if "OPENAI_API_KEY" in st.secrets else os.getenv("OPENAI_API_KEY"))
 
@@ -52,8 +47,8 @@ if "chat_history" not in st.session_state:
 if "uploaded_content" not in st.session_state:
     st.session_state.uploaded_content = ""
 
-# Pages
-if page == "🏗️ Project Info":
+# Page Routing
+if "file-text" in page:
     st.markdown("## 🏗️ Project Information")
     with st.container():
         col1, col2 = st.columns(2)
@@ -66,7 +61,7 @@ if page == "🏗️ Project Info":
         if st.button("💾 Save Project Info"):
             st.success("✅ Project information saved successfully.")
 
-elif page == "🧱 Components":
+elif "layers" in page:
     st.markdown("## 🧱 Component Materials")
     selected_component = st.selectbox("Select Component", components)
     edited_df = st.data_editor(
@@ -81,7 +76,7 @@ elif page == "🧱 Components":
         total = edited_df["Emissions (kg CO2e)"].sum()
         st.success(f"✅ Emissions for {selected_component}: {total / 1000:.2f} t CO₂e")
 
-elif page == "📊 Results":
+elif "bar-chart-2" in page:
     st.markdown("## 📊 Emissions Summary")
     all_data = pd.concat(st.session_state.component_data.values(), ignore_index=True)
     summary_df = all_data.groupby("Material")[["Emissions (kg CO2e)"]].sum().reset_index()
@@ -101,20 +96,20 @@ elif page == "📊 Results":
         output.seek(0)
         st.download_button("📄 Download Excel", output, file_name="beam_results.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-elif page == "🤖 AI Assistant":
+elif "message-square" in page:
     st.markdown("## 🤖 BEAM Assistant")
     st.markdown("You can also upload a design file for analysis (PDF or image).")
     uploaded_file = st.file_uploader("Upload your building design file", type=["pdf", "png", "jpg"])
-   "Uploaded image received. (Optical analysis not included here.)"
+    upload_text = ""
+
     if uploaded_file:
         if uploaded_file.type == "application/pdf":
             with pdfplumber.open(uploaded_file) as pdf:
                 pages = [page.extract_text() for page in pdf.pages]
-                upload_text = "Uploaded image received. (Optical analysis not included here.)"
-".join(filter(None, pages))
+                upload_text = "\n".join(filter(None, pages))
         elif uploaded_file.type.startswith("image/"):
             image = Image.open(uploaded_file)
-            upload_text = "Uploaded image received. (Optical analysis not included here.)"Uploaded image received. (Optical analysis not included here.)"
+            upload_text = "Uploaded image received. (Optical analysis not included here.)"
 
         st.session_state.uploaded_content = upload_text
         st.success("✅ File uploaded successfully.")
@@ -124,10 +119,7 @@ elif page == "🤖 AI Assistant":
     if prompt:
         full_prompt = prompt
         if st.session_state.uploaded_content:
-            full_prompt += f"
-
-Also consider the following document content:
-{st.session_state.uploaded_content}"
+            full_prompt += f"\n\nAlso consider the following document content:\n{st.session_state.uploaded_content}"
 
         with st.spinner("Thinking..."):
             try:
@@ -147,3 +139,4 @@ Also consider the following document content:
     for i, (user, bot) in enumerate(st.session_state.chat_history):
         message(user, is_user=True, key=f"user_{i}")
         message(bot, key=f"bot_{i}")
+
