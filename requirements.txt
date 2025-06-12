@@ -1,0 +1,7 @@
+streamlit
+pandas
+xlsxwriter
+streamlit-chat
+openai>=1.0.0
+pdfplumber
+Pillow
