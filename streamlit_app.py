@@ -9,25 +9,10 @@ from PIL import Image
 
 st.set_page_config(page_title="BEAM - Emissions App", layout="wide")
 
-SVG_ICONS = {
-    "Project Info": "https://www.svgrepo.com/show/532556/file-text.svg",
-    "Components": "https://www.svgrepo.com/show/532538/layers.svg",
-    "Results": "https://www.svgrepo.com/show/532507/bar-chart-2.svg",
-    "AI Assistant": "https://www.svgrepo.com/show/532635/message-square.svg"
-}
-
-def icon_row(label, icon_url):
-    return f"<img src='{icon_url}' width='18' style='margin-right:8px;vertical-align:middle;'> {label}"
-
-# Sidebar with SVG-only icons
+# Sidebar with plain text
 with st.sidebar:
-    st.markdown("<h2>BEAM</h2>", unsafe_allow_html=True)
-    page = st.radio("",
-        [icon_row("Project Info", SVG_ICONS["Project Info"]),
-         icon_row("Components", SVG_ICONS["Components"]),
-         icon_row("Results", SVG_ICONS["Results"]),
-         icon_row("AI Assistant", SVG_ICONS["AI Assistant"])],
-        label_visibility="collapsed")
+    st.title("BEAM")
+    page = st.radio("Navigation", ["Project Info", "Components", "Results", "AI Assistant"])
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"] if "OPENAI_API_KEY" in st.secrets else os.getenv("OPENAI_API_KEY"))
 
@@ -50,7 +35,7 @@ if "chat_history" not in st.session_state:
 if "uploaded_content" not in st.session_state:
     st.session_state.uploaded_content = ""
 
-if "Project Info" in page:
+if page == "Project Info":
     st.header("Project Information")
     col1, col2 = st.columns(2)
     with col1:
@@ -60,7 +45,7 @@ if "Project Info" in page:
         st.number_input("Floor Area (m²)", min_value=0, value=5000)
         st.text_input("Project ID", "AUTO123")
 
-elif "Components" in page:
+elif page == "Components":
     st.header("Component Materials")
     selected_component = st.selectbox("Select Component", components)
     edited_df = st.data_editor(
@@ -75,7 +60,7 @@ elif "Components" in page:
         total = edited_df["Emissions (kg CO2e)"].sum()
         st.success(f"Emissions for {selected_component}: {total / 1000:.2f} t CO₂e")
 
-elif "Results" in page:
+elif page == "Results":
     st.header("Emissions Summary")
     all_data = pd.concat(st.session_state.component_data.values(), ignore_index=True)
     summary_df = all_data.groupby("Material")[["Emissions (kg CO2e)"]].sum().reset_index()
@@ -94,7 +79,7 @@ elif "Results" in page:
         output.seek(0)
         st.download_button("Download Excel", output, file_name="beam_results.xlsx")
 
-elif "AI Assistant" in page:
+elif page == "AI Assistant":
     st.header("BEAM Assistant")
     uploaded_file = st.file_uploader("Upload a design file (PDF or Image)", type=["pdf", "png", "jpg"])
     upload_text = ""
