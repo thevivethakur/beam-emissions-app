@@ -2,14 +2,18 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 from streamlit_chat import message
+import openai
+import os
 
 st.set_page_config(page_title="BEAM - Emissions App", layout="wide", page_icon="🏗️")
 
-st.markdown("""<h1 style='text-align: center; color: #3f51b5;'>🏗️ BEAM - Building Emissions Accounting Model</h1>""", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #3f51b5;'>🏗️ BEAM - Building Emissions Accounting Model</h1>", unsafe_allow_html=True)
 
 with st.sidebar:
-    st.image("https://upload.wikedia.org/wikipedia/commons/thumb/3/38/Streamlit_logo_mark.svg/2048px-Streamlit_logo_mark.svg.png", width=60)
+    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Streamlit_logo_mark.svg/2048px-Streamlit_logo_mark.svg.png", width=60)
     page = st.radio("Navigation", ["Project Info", "Components", "Results", "AI Assistant"])
+
+openai.api_key = st.secrets["OPENAI_API_KEY"] if "OPENAI_API_KEY" in st.secrets else os.getenv("OPENAI_API_KEY")
 
 components = [
     'Footings & Slabs', 'Foundation Walls', 'Structural Elements', 'Ext. Walls', 'Party Walls',
@@ -82,17 +86,22 @@ elif page == "Results":
 
 elif page == "AI Assistant":
     st.subheader("Ask BEAM Assistant 🤖")
-    prompt = st.text_input("Ask a question about materials, emissions, or low-carbon alternatives:")
+    prompt = st.text_input("Ask anything about building emissions, materials, or suggestions:")
 
     if prompt:
-        if "concrete" in prompt.lower():
-            response = "Concrete is highly emissive due to cement. Consider low-carbon alternatives like fly ash concrete or geopolymer cement."
-        elif "summary" in prompt.lower():
-            total = sum(df["Emissions (kg CO2e)"].sum() for df in st.session_state.component_data.values()) / 1000
-            response = f"Your total project emissions are approximately {total:.2f} t CO₂e."
-        else:
-            response = "This is a demo assistant. For full GPT capabilities, integrate with OpenAI API."
-        st.session_state.chat_history.append((prompt, response))
+        with st.spinner("Thinking..."):
+            try:
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "You are an expert in low-carbon building materials and embodied carbon reduction."},
+                        {"role": "user", "content": prompt}
+                    ]
+                )
+                reply = response.choices[0].message.content
+            except Exception as e:
+                reply = f"API Error: {e}"
+            st.session_state.chat_history.append((prompt, reply))
 
     for i, (user, bot) in enumerate(st.session_state.chat_history):
         message(user, is_user=True, key=f"user_{i}")
