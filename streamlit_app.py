@@ -105,8 +105,7 @@ elif page == "🤖 AI Assistant":
     st.markdown("## 🤖 BEAM Assistant")
     st.markdown("You can also upload a design file for analysis (PDF or image).")
     uploaded_file = st.file_uploader("Upload your building design file", type=["pdf", "png", "jpg"])
-    upload_text = "Uploaded image received. (Optical analysis not included here.)""
-
+   "Uploaded image received. (Optical analysis not included here.)"
     if uploaded_file:
         if uploaded_file.type == "application/pdf":
             with pdfplumber.open(uploaded_file) as pdf:
